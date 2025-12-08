@@ -1,4 +1,5 @@
 from dataclasses import dataclass
+from typing import Optional
 
 import torch
 
@@ -15,6 +16,9 @@ class LTXPipelineOutput(BaseOutput):
             List of video outputs - It can be a nested list of length `batch_size,` with each sub-list containing
             denoised PIL image sequences of length `num_frames.` It can also be a NumPy array or Torch tensor of shape
             `(batch_size, num_frames, channels, height, width)`.
+        latents (`torch.Tensor`, *optional*):
+            The latent representations of the video before VAE decoding. Only returned when `output_type="both"`.
     """
 
     frames: torch.Tensor
+    latents: Optional[torch.Tensor] = None

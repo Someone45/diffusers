@@ -1237,6 +1237,11 @@ class LTXConditionPipeline(DiffusionPipeline, FromSingleFileMixin, LTXVideoLoraL
             self.transformer_temporal_patch_size,
         )
 
+        # Store normalized latents for "both" output type
+        output_latents = None
+        if output_type == "both":
+            output_latents = latents.clone()
+
         if output_type == "latent":
             video = latents
         else:
@@ -1263,12 +1268,19 @@ class LTXConditionPipeline(DiffusionPipeline, FromSingleFileMixin, LTXVideoLoraL
                 latents = (1 - decode_noise_scale) * latents + decode_noise_scale * noise
 
             video = self.vae.decode(latents, timestep, return_dict=False)[0]
-            video = self.video_processor.postprocess_video(video, output_type=output_type)
+
+            # For "both", return pt format; otherwise postprocess normally
+            if output_type == "both":
+                video = self.video_processor.postprocess_video(video, output_type="pt")
+            else:
+                video = self.video_processor.postprocess_video(video, output_type=output_type)
 
         # Offload all models
         self.maybe_free_model_hooks()
 
         if not return_dict:
+            if output_type == "both":
+                return (video, output_latents)
             return (video,)
 
-        return LTXPipelineOutput(frames=video)
+        return LTXPipelineOutput(frames=video, latents=output_latents)
